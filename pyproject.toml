@@ -1,0 +1,15 @@
+[project]
+name = "ai-cursor-runtime"
+version = "0.1.0"
+description = "CLI runtime that lets vision LLMs observe a desktop and drive cursor/keyboard actions."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Codex" }]
+dependencies = []
+
+[project.scripts]
+ai-cursor = "ai_cursor.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"

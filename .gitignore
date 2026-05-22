@@ -1,0 +1,10 @@
+.ai-cursor-runs/
+.env
+.env.local
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+dist/
+build/
+*.egg-info/
