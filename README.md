@@ -1,64 +1,77 @@
-# AI Cursor Runtime
+# Agent Computer Use
 
-AI Cursor Runtime is a dependency-light Python CLI that lets a vision-capable LLM drive a desktop:
-
-```text
-observe screen -> ask model for one action -> execute -> observe again
-```
-
-It is meant to be called by other agents and automation scripts.
+Let a vision LLM drive your desktop. Point it at a task, and it observes the screen, picks one action, executes it, and re-observes — until it's done.
 
 ## Demo
 
-The model is asked to draw a heart in MS Paint. It observes, clicks, drags, and reports `done` when the canvas matches.
+The model is asked to draw a heart in MS Paint. It launches Paint, picks a tool, drags strokes, and reports `done` when the canvas matches.
 
-<video src="docs/demo.mp4" controls muted autoplay loop width="720"></video>
+![Demo: drawing a heart in MS Paint](docs/demo.gif)
 
-If your viewer doesn't render the embed: [docs/demo.mp4](docs/demo.mp4).
+## What it can do
+
+- **Open apps, click controls, drag icons, type text** on macOS or Windows.
+- **Test app flows visually** — including the iOS Simulator, treated as another window.
+- **Drive any vision-capable LLM** — OpenAI (e.g. `gpt-5.5`) or Anthropic (e.g. `claude-opus-4-1`).
+- **Stay in control** — the model returns one JSON action at a time and re-observes after every step. You can cap steps, dry-run a single decision, or run low-level click/drag/type commands by hand.
+- **Skip ceremony** — no Selenium, no Playwright, no element selectors. Just screenshots and coordinates.
+
+## Install
+
+```bash
+git clone https://github.com/ThomasGrayX/agent-computer-use.git
+cd agent-computer-use
+python3 -m venv .venv
+.venv/bin/pip install -e .
+cp .env.example .env  # add OPENAI_API_KEY and/or ANTHROPIC_API_KEY
+```
+
+Requires Python 3.11+. macOS needs Screen Recording and Accessibility permissions for the terminal (the runtime will prompt on first use).
 
 ## Quick Start
 
-```powershell
-python -m ai_cursor observe --grid
-python -m ai_cursor run "Open Notepad and type hello" --model openai:gpt-5.5 --grid --allow-shell
-python -m ai_cursor run "Test the login flow in the iOS simulator" --model anthropic:opus-4.7 --target ios-simulator --grid --allow-shell
-```
-
-The default model is `mock:done`, which lets you verify the CLI without API keys:
-
-```powershell
+```bash
+# Smoke test (no API key needed — uses the mock model)
 python -m ai_cursor run "Do nothing for a smoke test"
+
+# Drive a real task with the grid overlay (best clicks) and shell access (so the model can launch apps)
+python -m ai_cursor run "Open Notepad and type hello" \
+  --model openai:gpt-5.5 --grid --allow-shell
+
+# Test an iOS Simulator flow
+python -m ai_cursor run "Test the login flow in the iOS simulator" \
+  --model anthropic:claude-opus-4-1-20250805 --grid --allow-shell
 ```
 
-You can also expose the `ai-cursor` command with `pip install -e .`.
+After `pip install -e .` the `ai-cursor` command is also on PATH.
 
 ## Model Flags
 
 Use `provider:model`:
 
-```powershell
+```bash
 --model openai:gpt-5.5
---model anthropic:opus-4.7
+--model anthropic:claude-opus-4-1-20250805
 --model mock:click-center
 ```
 
-Environment variables:
+Environment variables (auto-loaded from `.env`):
 
-```powershell
-$env:OPENAI_API_KEY = "..."
-$env:ANTHROPIC_API_KEY = "..."
-$env:AI_CURSOR_MODEL = "openai:gpt-5.5"
-$env:AI_CURSOR_MODEL_OUTPUT_TOKENS = "4096"
-$env:AI_CURSOR_REASONING_EFFORT = "low"
+```env
+OPENAI_API_KEY=...
+ANTHROPIC_API_KEY=...
+AI_CURSOR_MODEL=openai:gpt-5.5
+AI_CURSOR_MODEL_OUTPUT_TOKENS=4096
+AI_CURSOR_REASONING_EFFORT=low
 ```
 
-The CLI also auto-loads `.env` from the current folder, so you can put those values there once. Use `--env-file path\to\file.env` if you want a different file. Real `.env` files are gitignored.
+Use `--env-file path/to/file.env` for a non-default location. Real `.env` files are gitignored.
 
 The OpenAI adapter uses the Responses API with `input_image` data URLs. The Anthropic adapter uses the Messages API with base64 image blocks.
 
-## Commands
+## Low-level Commands
 
-```powershell
+```bash
 python -m ai_cursor observe --grid
 python -m ai_cursor click 500 400
 python -m ai_cursor click-type 500 400 "hello"
@@ -72,12 +85,12 @@ Low-level `click` and `move` commands use absolute screen coordinates. In `run`,
 
 ## Run Loop
 
-```powershell
-python -m ai_cursor run "Open the app and verify the settings screen" `
-  --model openai:gpt-5.5 `
-  --grid `
-  --max-steps 40 `
-  --allow-shell `
+```bash
+python -m ai_cursor run "Open the app and verify the settings screen" \
+  --model openai:gpt-5.5 \
+  --grid \
+  --max-steps 40 \
+  --allow-shell \
   --pre-command "npm run ios"
 ```
 
@@ -129,20 +142,20 @@ When the model returns `done` or `fail`, the CLI response includes `finished_sta
 
 ## Current Backends
 
-Windows desktop:
+**Windows desktop:**
 
-- screenshots are captured with PowerShell and .NET drawing APIs;
-- the optional grid is drawn into a second screenshot;
+- screenshots captured with PowerShell and .NET drawing APIs;
+- optional grid drawn into a second screenshot;
 - cursor and keyboard input use Windows `user32` APIs.
 
-macOS desktop:
+**macOS desktop:**
 
-- screenshots are captured with the built-in `screencapture` command;
-- the optional grid is drawn with a built-in PNG overlay helper;
+- screenshots captured with the built-in `screencapture` command;
+- optional grid drawn with a built-in PNG overlay helper;
 - cursor and keyboard input use Quartz `CGEvent` APIs through Python `ctypes`;
-- the terminal/Python app needs macOS Screen Recording and Accessibility permissions.
+- the terminal/Python binary needs macOS Screen Recording and Accessibility permissions.
 
-For iOS Simulator work, this MVP treats the simulator as a desktop target. The next backend should prefer simulator-native tools such as XCUITest or Appium for element-aware actions, falling back to visual clicking only when needed.
+For iOS Simulator work, this MVP treats the simulator as a desktop target. A future backend could prefer simulator-native tools like XCUITest or Appium for element-aware actions, falling back to visual clicking only when needed.
 
 ## API References
 
@@ -152,3 +165,7 @@ For iOS Simulator work, this MVP treats the simulator as a desktop target. The n
 ## Notes
 
 A custom visible AI cursor is best treated as a debug overlay. The actual interaction still needs system input injection, so this runtime uses the real OS cursor for now.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
