@@ -8,6 +8,14 @@ observe screen -> ask model for one action -> execute -> observe again
 
 It is meant to be called by other agents and automation scripts.
 
+## Demo
+
+The model is asked to draw a heart in MS Paint. It observes, clicks, drags, and reports `done` when the canvas matches.
+
+<video src="docs/demo.mp4" controls muted autoplay loop width="720"></video>
+
+If your viewer doesn't render the embed: [docs/demo.mp4](docs/demo.mp4).
+
 ## Quick Start
 
 ```powershell
